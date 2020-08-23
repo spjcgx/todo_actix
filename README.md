@@ -1,14 +1,19 @@
-# Simple TODO service with Actix
+# Simple TODO service with Actix 基于 Actix 的简单的待办事项服务
 
 Code of "Simple TODO service with Actix":
+
+"基于 Actix 的简单的待办事项服务"的源码：
 
 https://www.youtube.com/playlist?list=PLECOtlti4PspZHOySyzf9RApJFguZPFoF
 
 Creating a TODO service with Actix Web (Rust lang)
+
 使用 Rust 语言的 Actix Web 框架创建一个待办事项（TODO）服务
 
 This may be helpful for people that:
+
 可能对以下人员有所帮助：
+
 * Have a background in languages similar to c, c++, java, javascript or c#.
 * 有其它语言的编程背景，比如：C、C++、Java、JavaScript或C#。
 * Hate/Love c, c++, java, javascript or c#.
