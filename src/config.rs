@@ -8,9 +8,10 @@ pub struct ServerConfig {
     pub port:i32,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive( Deserialize)]
 pub struct Config {
     pub server: ServerConfig,
+    pub pg: deadpool_postgres::Config,
 }
 
 impl Config {

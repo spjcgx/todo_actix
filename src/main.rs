@@ -1,24 +1,27 @@
 mod models;
 mod config;
+mod handlers;
+mod db;
 
-use actix_web::{HttpServer, App, web, Responder};
+use actix_web::{HttpServer, App, web};
 use dotenv::dotenv;
+use tokio_postgres::NoTls;
 
-async fn index() -> impl Responder {
-    web::HttpResponse::Ok().json(
-        models::Status {
-            status: "OK".to_string(),
-        })
-}
+
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();    
     let cfg = config::Config::from_env().unwrap();
     println!("Starting server at http://{}:{}/", cfg.server.host, cfg.server.port); 
-    HttpServer::new(||{
+    
+    let pool = cfg.pg.create_pool(NoTls).unwrap();
+
+    HttpServer::new(move||{
         App::new()
-            .route("/", web::get().to(index))
+            .data(pool.clone())
+            .route("/", web::get().to(handlers::index))
+            .route("/todos{_:/?}", web::get().to(handlers::get_todos))
     })
         .bind(format!("{}:{}", cfg.server.host, cfg.server.port))?
         .run()
