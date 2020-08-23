@@ -24,3 +24,15 @@ pub async fn get_items(client: &Client, list_id: i32) -> Result<Vec<TodoItem>, s
     .collect::<Vec<TodoItem>>();
     Ok(items)
 }
+
+pub async fn create_todo(client:&Client, title:String) -> Result<TodoList, std::io::Error> {
+    let stmt = client.prepare("INSERT INTO todo_list (title) VALUES ($1) RETURNING id,title").await.unwrap();
+    client.query(&stmt, &[&title])
+    .await
+    .expect("Error create todo list")
+    .iter()
+    .map(|row| TodoList::from_row_ref(row).unwrap())
+    .collect::<Vec<TodoList>>()
+    .pop()
+    .ok_or(std::io::Error::new(std::io::ErrorKind::Other, "Error creating todo list"))
+}
