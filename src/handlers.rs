@@ -36,3 +36,13 @@ pub async fn create_todo(db_pool: web::Data<Pool>, json: web::Json<models::Creat
         Err(_) => web::HttpResponse::InternalServerError().into(),
     }
 }
+
+pub async fn check_item(db_pool: web::Data<Pool>, path: web::Path<(i32, i32)>)->impl Responder {
+    let client:Client = db_pool.get().await.expect("Error connection to database");
+    let result = db::check_item(&client, path.0, path.1).await;
+    match result {
+        Ok(()) => web::HttpResponse::Ok().json(models::ResultResponse{success:true}),
+        Err(ref e) if e.kind() == std::io::ErrorKind::Other =>  web::HttpResponse::Ok().json(models::ResultResponse{success:false}),
+        Err(_) => web::HttpResponse::InternalServerError().into(),
+    }
+}

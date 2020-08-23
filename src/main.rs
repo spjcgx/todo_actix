@@ -24,6 +24,7 @@ async fn main() -> std::io::Result<()> {
             .route("/todos{_:/?}", web::get().to(handlers::get_todos))
             .route("/todos/{list_id}/items{_:/?}", web::get().to(handlers::get_items))
             .route("/todos{_:/?}", web::post().to(handlers::create_todo))
+            .route("/todos/{list_id}/items/{item_id}{_:/?}", web::put().to(handlers::check_item))
     })
         .bind(format!("{}:{}", cfg.server.host, cfg.server.port))?
         .run()

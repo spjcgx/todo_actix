@@ -36,3 +36,14 @@ pub async fn create_todo(client:&Client, title:String) -> Result<TodoList, std::
     .pop()
     .ok_or(std::io::Error::new(std::io::ErrorKind::Other, "Error creating todo list"))
 }
+
+pub async fn check_item(client:&Client, list_id:i32, item_id: i32) ->Result<(), std::io::Error>{
+    let stmt = client.prepare("UPDATE todo_item SET checked=true WHERE list_id=$1 AND id = $2 AND checked=false").await.unwrap();
+    let result = client.execute(&stmt, &[&list_id,&item_id])
+    .await
+    .expect("Error update checked");
+    match result {
+        ref updated if *updated == 1 => Ok(()),
+        _ => Err(std::io::Error::new(std::io::ErrorKind::Other, "Failed to check list"))
+    }
+}
