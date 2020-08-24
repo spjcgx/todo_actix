@@ -2,6 +2,7 @@ use actix_web::{web, Responder};
 use crate::models;
 use deadpool_postgres::{Pool, Client};
 use crate::db;
+use crate::errors::{AppError};
 
 pub async  fn index() -> impl Responder {
     web::HttpResponse::Ok().json(
@@ -9,13 +10,12 @@ pub async  fn index() -> impl Responder {
             status: "OK".to_string(),
         })
 }
-pub async fn get_todos(db_pool: web::Data<Pool>) -> impl Responder {
-    let client:Client = db_pool.get().await.expect("Error connection to the database.");
+pub async fn get_todos(db_pool: web::Data<Pool>) -> Result<impl Responder, AppError> {
+    let client:Client = db_pool.get()
+    .await
+    .map_err(AppError::db_error)?;
     let result = db::get_todos(&client).await;
-    match result {
-        Ok(list) => web::HttpResponse::Ok().json(list),
-        Err(_) => web::HttpResponse::InternalServerError().into(),
-    }
+   result.map(|todos| web::HttpResponse::Ok().json(todos))
 
 }
 
@@ -28,21 +28,20 @@ pub async fn get_items(db_pool: web::Data<Pool>, path: web::Path<(i32,)>) -> imp
     }
 }
 
-pub async fn create_todo(db_pool: web::Data<Pool>, json: web::Json<models::CreateTodoList>) -> impl Responder {
-    let client:Client = db_pool.get().await.expect("Error connect to the database");
+pub async fn create_todo(db_pool: web::Data<Pool>, json: web::Json<models::CreateTodoList>) -> Result<impl Responder, AppError> {
+    let client:Client = db_pool.get()
+    .await
+    .map_err(AppError::db_error)?;
+
     let result = db::create_todo(&client, json.title.clone()).await;
-    match result {
-        Ok(todo) => web::HttpResponse::Ok().json(todo),
-        Err(_) => web::HttpResponse::InternalServerError().into(),
-    }
+    result.map(|todo|web::HttpResponse::Ok().json(todo))
 }
 
-pub async fn check_item(db_pool: web::Data<Pool>, path: web::Path<(i32, i32)>)->impl Responder {
-    let client:Client = db_pool.get().await.expect("Error connection to database");
+pub async fn check_item(db_pool: web::Data<Pool>, path: web::Path<(i32, i32)>)->Result<impl Responder, AppError>{
+    let client:Client = db_pool.get()
+    .await
+    .map_err(AppError::db_error)?;
+
     let result = db::check_item(&client, path.0, path.1).await;
-    match result {
-        Ok(()) => web::HttpResponse::Ok().json(models::ResultResponse{success:true}),
-        Err(ref e) if e.kind() == std::io::ErrorKind::Other =>  web::HttpResponse::Ok().json(models::ResultResponse{success:false}),
-        Err(_) => web::HttpResponse::InternalServerError().into(),
-    }
+    result.map(|updated| web::HttpResponse::Ok().json(models::ResultResponse{success: updated}))
 }

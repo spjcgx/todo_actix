@@ -1,10 +1,14 @@
 use crate::models::{TodoList, TodoItem};
 use deadpool_postgres::Client;
 use tokio_pg_mapper::FromTokioPostgresRow;
+use crate::errors::{AppError,AppErrorType};
 
 
-pub async fn get_todos(client: &Client) -> Result<Vec<TodoList>, std::io::Error>{
-    let statement = client.prepare("SELECT * FROM todo_list ORDER BY id DESC").await.unwrap();
+pub async fn get_todos(client: &Client) -> Result<Vec<TodoList>, AppError>{
+    let statement = client.prepare("SELECT * FROM todo_list ORDER BY id DESC")
+    .await
+    .map_err(AppError::db_error)?;
+
     let todos = client.query(&statement, &[])
         .await  
         .expect("Error get todo list")
@@ -25,8 +29,12 @@ pub async fn get_items(client: &Client, list_id: i32) -> Result<Vec<TodoItem>, s
     Ok(items)
 }
 
-pub async fn create_todo(client:&Client, title:String) -> Result<TodoList, std::io::Error> {
-    let stmt = client.prepare("INSERT INTO todo_list (title) VALUES ($1) RETURNING id,title").await.unwrap();
+pub async fn create_todo(client:&Client, title:String)
+ -> Result<TodoList, AppError> {
+    let stmt = client.prepare("INSERT INTO todo_list (title) VALUES ($1) RETURNING id,title")
+    .await
+    .map_err(AppError::db_error)?;
+
     client.query(&stmt, &[&title])
     .await
     .expect("Error create todo list")
@@ -34,16 +42,26 @@ pub async fn create_todo(client:&Client, title:String) -> Result<TodoList, std::
     .map(|row| TodoList::from_row_ref(row).unwrap())
     .collect::<Vec<TodoList>>()
     .pop()
-    .ok_or(std::io::Error::new(std::io::ErrorKind::Other, "Error creating todo list"))
+    .ok_or(
+        AppError{
+            message:Some("Error creationg todo list".to_string()),
+            cause: Some("Unknow error".to_string()),
+            error_type: AppErrorType::DbError,
+        }
+    )
 }
 
-pub async fn check_item(client:&Client, list_id:i32, item_id: i32) ->Result<(), std::io::Error>{
-    let stmt = client.prepare("UPDATE todo_item SET checked=true WHERE list_id=$1 AND id = $2 AND checked=false").await.unwrap();
+pub async fn check_item(client:&Client, list_id:i32, item_id: i32) 
+->Result<bool, AppError>{
+    let stmt = client.prepare("UPDATE todo_item SET checked=true WHERE list_id=$1 AND id = $2 AND checked=false")
+    .await
+    .map_err(AppError::db_error)?;
+
     let result = client.execute(&stmt, &[&list_id,&item_id])
     .await
     .expect("Error update checked");
     match result {
-        ref updated if *updated == 1 => Ok(()),
-        _ => Err(std::io::Error::new(std::io::ErrorKind::Other, "Failed to check list"))
+        ref updated if *updated == 1 => Ok(true),
+        _ => Ok(false),
     }
 }
