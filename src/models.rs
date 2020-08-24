@@ -2,6 +2,11 @@ use serde::Serialize;
 use serde::Deserialize;
 use tokio_pg_mapper_derive::PostgresMapper;
 
+pub struct AppState {
+    pub pool: deadpool_postgres::Pool,
+    pub log: slog::Logger,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Status{
     pub status: String,

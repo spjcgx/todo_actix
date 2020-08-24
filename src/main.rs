@@ -30,7 +30,12 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move||{
         App::new()
-            .data(pool.clone())
+            .data(
+                models::AppState {
+                    pool: pool.clone(),
+                    log: log.clone(),
+                }
+            )
             .route("/", web::get().to(handlers::index))
             .route("/todos{_:/?}", web::get().to(handlers::get_todos))
             .route("/todos/{list_id}/items{_:/?}", web::get().to(handlers::get_items))
